@@ -1,0 +1,101 @@
+Dim APP设置
+APP设置 = Array("com.znznmsjw.tw","com.WGkv3YPbt.SiBIrJ","com.iqiyi.vider","com.huojianqipai.android.game")
+抹机王_一键新机() 
+For i = 0 To UBound(APP设置)
+Delay 2000
+RunApp APP设置(i)
+Delay 30000
+KillApp APP设置(i)
+KeyPress "Home"
+Next
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Function apiHttpGet(paramStr)
+    Dim result=Url.Get("http://127.0.0.1:8181/api?"&paramStr,50)     ////更改超时时间为50秒
+    apiHttpGet = result
+End Function
+
+
+Function 抹机王_一键新机()
+    For 1
+        Dim result_dotask_json
+        Dim result_dotask_table()
+        Dim reqParamStr = "reqCode=7001"   
+
+        //请求一键新机
+        result_dotask_json = apiHttpGet(reqParamStr)      
+        //新机无响应
+        If result_dotask_json="" Then          
+            result_dotask_table["RespCode"] = "-1"
+            result_dotask_table["Message"] ="抹机王无响应，请求超时"
+            抹机王_一键新机 = result_dotask_table
+            Exit For
+            //新机接口有响应
+        Else
+            result_dotask_table = Encode.JsonToTable(result_dotask_json)       
+        End If
+        
+        
+        //每4秒请求一次任务结果      
+        Dim result_getstatus_json
+        Dim result_getstatus_table()  
+        Dim i = 0      
+        While i<=20
+            reqParamStr = "reqCode=7011&taskId=" & result_dotask_table["Data"]["TaskId"]
+            ShowMessage  reqParamStr 
+            
+            result_getstatus_json = apiHttpGet(reqParamStr)
+            ShowMessage  result_getstatus_json
+            //插件无响应
+            If result_getstatus_json = "" Then 
+                result_getstatus_table["RespCode"] = "-1"
+                result_getstatus_table["Message"] ="抹机王无响应，请求超时"
+                抹机王_一键新机 = result_getstatus_table
+                Exit For
+            //插件有响应
+            Else 
+                ShowMessage  "插件有响应" 
+                
+                result_getstatus_table = Encode.JsonToTable(result_getstatus_json)
+                If result_getstatus_table["RespCode"] = "2" Then                     
+                    ShowMessage  "一键新机运行中"
+                    Delay 2000
+                    i = i + 1
+                Else 
+                    ShowMessage  "一键新机结果出来了"
+                    //执行结果已出来
+                    抹机王_一键新机 = result_getstatus_table
+                    Exit While
+                End If 
+            End If
+        Wend
+        
+        //60次还在运行中，被脚本当成超时处理
+        If result_getstatus_table["RespCode"] = "2" Then
+            result_getstatus_table["RespCode"] = "-1"
+            result_getstatus_table["Message"] = "任务长时间未结束，已当超时处理"  
+            抹机王_一键新机 = result_getstatus_table
+        End If
+    Next    
+End Function
+
+
+
+
